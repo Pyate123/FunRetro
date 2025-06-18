@@ -1,0 +1,99 @@
+# fun_retro_streamlit.py
+
+import streamlit as st
+import qrcode
+from io import BytesIO
+from PIL import Image
+import time
+
+# --- Page Config ---
+st.set_page_config(page_title="Fun Retro", page_icon="🌀", layout="centered")
+
+# --- Logo ---
+st.image("funretro-logo.png", width=120)
+
+# --- State ---
+if "step" not in st.session_state:
+    st.session_state.step = 0
+if "theme" not in st.session_state:
+    st.session_state.theme = None
+if "countdown" not in st.session_state:
+    st.session_state.countdown = 30
+
+# --- Themes ---
+themes = {
+    "Cricket Fever": {
+        "good": "🏏 Which shots hit the boundary?",
+        "bad": "❌ Where did we lose wickets?",
+        "improve": "🚀 How can we level up our next innings?"
+    },
+    "South Cinema": {
+        "good": "🎉 Which scenes got whistles?",
+        "bad": "🥱 Which plot holes bored the crowd?",
+        "improve": "🎬 What twist will make the sequel blockbuster?"
+    },
+    "Space Odyssey": {
+        "good": "🚀 Which thrusters fired flawlessly?",
+        "bad": "🔥 Where did we burn extra fuel?",
+        "improve": "🛠️ What upgrades ensure a smoother orbit?"
+    }
+}
+
+# --- Steps ---
+def show_qr_step():
+    st.subheader("📲 Scan to Start Retro")
+    url = "https://funretro.company/retro/session/abc"
+    qr = qrcode.make(url)
+    buf = BytesIO()
+    qr.save(buf)
+    st.image(Image.open(buf), caption="Scan this QR on your phone")
+
+    if st.button("I’ve scanned it"):
+        st.session_state.step = 1
+
+def show_theme_step():
+    st.subheader("🎭 Choose a Theme")
+    for theme in themes:
+        if st.button(theme):
+            st.session_state.theme = theme
+            st.session_state.step = 2
+            st.session_state.start_time = time.time()
+
+def show_feedback_step():
+    theme = st.session_state.theme
+    st.subheader(f"📝 Retro: {theme}")
+    
+    elapsed = int(time.time() - st.session_state.start_time)
+    remaining = max(0, 30 - elapsed)
+    st.markdown(f"⏳ Time left: **{remaining} seconds**")
+
+    feedback = {
+        "good": st.text_area(themes[theme]["good"]),
+        "bad": st.text_area(themes[theme]["bad"]),
+        "improve": st.text_area(themes[theme]["improve"])
+    }
+
+    if st.button("✅ Submit and Save to Jira"):
+        st.session_state.feedback = feedback
+        st.session_state.step = 3
+
+def show_done_step():
+    st.success("🎉 Feedback submitted!")
+    st.markdown("✅ Your Jira ticket has been created: **RET-123**")
+    if st.button("🔁 Start New Retro"):
+        for key in ["step", "theme", "feedback", "countdown"]:
+            if key in st.session_state: del st.session_state[key]
+
+# --- App Flow ---
+st.title("🌀 Fun Retro")
+
+steps = {
+    0: show_qr_step,
+    1: show_theme_step,
+    2: show_feedback_step,
+    3: show_done_step
+}
+
+steps[st.session_state.step]()
+
+# Optional: add retro-music.mp3 in frontend HTML if using advanced deployment
